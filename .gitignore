@@ -1,0 +1,6 @@
+tmp/
+localdev/
+*.key
+*.env
+*.pem
+*.enc
