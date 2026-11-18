@@ -314,10 +314,17 @@ int main(int argc,char **argv) {
         unsigned char b64[128]={0};
         int encoded=encode_base64(sec->output,olen,b64,sizeof(b64));
         if(!encoded) die("Base64 编码失败");
+        /* 32 字节必然编码为 44 字符，且最后一个字符恰为一个 '='。 */
+        if(olen==32 && (encoded!=44 || b64[42]=='=' || b64[43]!='=')) {
+            OPENSSL_cleanse(b64,sizeof(b64));
+            die("32 字节密钥 Base64 长度或填充校验失败");
+        }
         int written=fwrite(b64,1,(size_t)encoded,stdout)==(size_t)encoded;
         int flushed=fflush(stdout);
         OPENSSL_cleanse(b64,sizeof(b64));
         if(!written || flushed!=0) die("Base64 输出失败");
+        /* 密钥 payload 末尾不加换行，但终端必须另起一行，避免 shell 提示符粘连。 */
+        if(dprintf(ttyfd,"\n")<0) die("终端换行输出失败");
     }
     return 0;
 }
