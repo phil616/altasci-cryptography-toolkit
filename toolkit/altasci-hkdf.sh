@@ -187,6 +187,14 @@ static int parse_master(const char *s, size_t n, unsigned char *out) {
     if(parse_pybytes(s,n,out)) return 1;
     return 0;
 }
+/* Base64 只编码密钥数据：32 字节应输出 44 个字符（不含结尾 NUL 或换行）。 */
+static int encode_base64(const unsigned char *data,size_t len,unsigned char *out,size_t cap) {
+    if(len==0 || len>64) return 0;
+    size_t expected=4*((len+2)/3);
+    if(cap<=expected) return 0;
+    int encoded=EVP_EncodeBlock(out,data,(int)len);
+    return encoded==(int)expected && out[encoded]=='\0' ? encoded : 0;
+}
 static void dump_hex(const unsigned char *p,size_t n,int colon) {
     for(size_t i=0;i<n;i++) { if(colon && i) putchar(':'); printf("%02x",p[i]); }
     putchar('\n');
@@ -219,6 +227,14 @@ static int selftest(void) {
     for(size_t i=0;i<sizeof(info);i++) info[i]=(unsigned char)(0xf0+i);
     if(!parse_hex("3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865",84,expected,42)) return 0;
     int ok=derive(ikm,sizeof(ikm),salt,sizeof(salt),info,sizeof(info),out,sizeof(out)) && CRYPTO_memcmp(out,expected,42)==0;
+    /* 32 原始字节 -> 44 字符标准 Base64 -> 32 原始字节，不含换行。 */
+    unsigned char raw[32],b64[48]={0},roundtrip[32]={0};
+    for(size_t i=0;i<sizeof(raw);i++) raw[i]=(unsigned char)i;
+    int b64len=encode_base64(raw,sizeof(raw),b64,sizeof(b64));
+    ok=ok && b64len==44 && b64[43]=='=' &&
+       parse_b64((const char*)b64,(size_t)b64len,roundtrip) &&
+       CRYPTO_memcmp(raw,roundtrip,sizeof(raw))==0;
+    OPENSSL_cleanse(raw,sizeof(raw)); OPENSSL_cleanse(b64,sizeof(b64)); OPENSSL_cleanse(roundtrip,sizeof(roundtrip));
     OPENSSL_cleanse(ikm,sizeof(ikm)); OPENSSL_cleanse(out,sizeof(out)); OPENSSL_cleanse(expected,sizeof(expected));
     return ok;
 }
@@ -291,9 +307,18 @@ int main(int argc,char **argv) {
     printf("\n派生成功：AES-%zu / %s\n",olen*8,format==0?"hex":format==1?"base64":"colon");
     printf("派生域：%s\n",sec->domain);
     puts("派生密钥（请妥善保存，终端输出可能被录屏或终端日志记录）：");
+    if(format==1) printf("注意：%zu 字节原始密钥编码为 %zu 个 Base64 字符；末尾不添加换行符。\n",olen,4*((olen+2)/3));
     if(format==0) dump_hex(sec->output,olen,0);
     else if(format==2) dump_hex(sec->output,olen,1);
-    else { unsigned char b64[128]={0}; EVP_EncodeBlock(b64,sec->output,(int)olen); puts((char*)b64); OPENSSL_cleanse(b64,sizeof(b64)); }
+    else {
+        unsigned char b64[128]={0};
+        int encoded=encode_base64(sec->output,olen,b64,sizeof(b64));
+        if(!encoded) die("Base64 编码失败");
+        int written=fwrite(b64,1,(size_t)encoded,stdout)==(size_t)encoded;
+        int flushed=fflush(stdout);
+        OPENSSL_cleanse(b64,sizeof(b64));
+        if(!written || flushed!=0) die("Base64 输出失败");
+    }
     return 0;
 }
 C_SOURCE
