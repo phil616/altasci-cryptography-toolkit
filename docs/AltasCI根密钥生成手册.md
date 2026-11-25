@@ -34,7 +34,8 @@ pip install sseed
 sseed --help
 ```
 
-或使用uv(推荐)
+或使用 uv（推荐）：
+
 ```bash
 uv venv
 source .venv/bin/activate
@@ -179,38 +180,8 @@ sseed bip85 hex -i recovered.txt -b 32 -n 100 -o aes-key.hex
 (
     set -eu
     umask 077
-    [ "$(grep -Ec '^[0-9a-fA-F]{64}
-
-通过可信的历史密钥校验值或对已知测试密文完成一次成功的认证解密来验证；仅验证助记词校验和不足以确认恢复成功。
-
-**派生密钥 ≠ 文件加密方案。** AES-256-GCM 等实际加密仍需保存对应密文、Nonce/IV、认证标签、可能的 AAD、算法及文件格式信息，否则即使恢复了密钥也可能无法解密旧文件。
-
-### ⑥ 清理
-
-```bash
-cd ~
-find "$work" -maxdepth 1 -type f -exec shred -u -- {} +
-rm -rf "$work"
-```
-
-同样注意 SSD / 快照等环境无法保证 `shred` 的彻底擦除效果。
- aes-key.hex)" -eq 1 ]
-    grep -E '^[0-9a-fA-F]{64}
-
-通过可信的历史密钥校验值或对已知测试密文完成一次成功的认证解密来验证；仅验证助记词校验和不足以确认恢复成功。
-
-**派生密钥 ≠ 文件加密方案。** AES-256-GCM 等实际加密仍需保存对应密文、Nonce/IV、认证标签、可能的 AAD、算法及文件格式信息，否则即使恢复了密钥也可能无法解密旧文件。
-
-### ⑤ 清理
-
-```bash
-cd ~
-shred -u "$work"/recovered.txt "$work"/aes-key.hex
-rm -rf "$work"
-```
-
-同样注意 SSD / 快照等环境无法保证 `shred` 的彻底擦除效果。
- aes-key.hex > aes-key.raw.hex
+    [ "$(grep -Ec '^[0-9a-fA-F]{64}$' aes-key.hex)" -eq 1 ]
+    grep -E '^[0-9a-fA-F]{64}$' aes-key.hex > aes-key.raw.hex
     xxd -r -p aes-key.raw.hex > aes-key.bin
     [ "$(wc -c < aes-key.bin)" -eq 32 ]
     printf '密钥格式检查通过（32 字节）\n'
@@ -223,11 +194,13 @@ rm -rf "$work"
 
 **派生密钥 ≠ 文件加密方案。** AES-256-GCM 等实际加密仍需保存对应密文、Nonce/IV、认证标签、可能的 AAD、算法及文件格式信息，否则即使恢复了密钥也可能无法解密旧文件。
 
-### ⑤ 清理
+### ⑥ 清理
+
+在确认原始备份及需要保留的恢复结果已经安全保存，并且工作目录不再需要后，清理临时文件：
 
 ```bash
 cd ~
-shred -u "$work"/recovered.txt "$work"/aes-key.hex
+find "$work" -maxdepth 1 -type f -exec shred -u -- {} +
 rm -rf "$work"
 ```
 
