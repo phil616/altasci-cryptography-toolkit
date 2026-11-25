@@ -1,5 +1,7 @@
 # AltasCI根密钥生成手册
 
+> U2FsdGVkX1/ntjVSzOhWHbAJQKQL7z+ik4NUzsdNT1cE6w6gHuWefTEEiYIwvVDSM6lvC8S5YgM2wOEkQqd0QQI/ubT7Bc11pO3wDSO62k0=
+
 **原理：** 使用 24 个英文 BIP-39 助记词（对应 256 位熵）作为根秘密，通过 BIP-85 确定性派生 **32 字节（256 位）的 AES-256 密钥材料**。24 是**助记词数量**，32 是 **AES 密钥字节数**，不能将 `-b 32` 改成 `-b 24` 后仍称为 AES-256。
 
 **区分三个标准：** BIP-39 表示根秘密；BIP-85 确定性派生密钥；SLIP-39 仅用于可选的秘密共享备份与恢复。直接持有原始 24 词 BIP-39 助记词时，不需要执行 `sseed restore`，也不需要生成 SLIP-39 分片。
