@@ -1,5 +1,7 @@
 # AltasCI 子密钥台账手册
 
+> U2FsdGVkX1+mROEr/+sbZ25zCWyCLc6HM1ELz5yGGr48m8WZsDrbVZX44Ho+F43ATJIHeumzEFaY4fPQv6SsZoCqlzi9hcaRZ1Gs0evPN7U=
+
 **派生协议：** AltasCI/HKDF/v1  
 **派生算法：** HKDF-SHA256  
 **配套工具：** [altasci-hkdf.sh](https://github.com/phil616/altasci-cryptography-toolkit/blob/main/toolkit/altasci-hkdf.sh)
